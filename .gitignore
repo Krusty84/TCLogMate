@@ -1,0 +1,11 @@
+# Xcode
+build/
+DerivedData/
+# User-specific Xcode settings
+*.xcuserdatad
+xcuserdata/
+# Xcode project file
+#TCLogMate.xcodeproj/
+# Logs and temporary files
+*.log
+*.tmp
