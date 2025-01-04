@@ -14,7 +14,12 @@ struct TCLogMateApp: App {
     @StateObject var preferences = AppPreferences()
     var body: some Scene {
         WindowGroup {
-            MainWindow().environmentObject(preferences)
+            MainWindow().environmentObject(preferences).onAppear {
+                //disable default NewTabbing feature
+                if let window = NSApp.windows.first {
+                    window.tabbingMode = .disallowed
+                }
+            }
         }.commands {
             CommandGroup(replacing: .appInfo) {
                 Button("About MyGreatApp") {
@@ -37,8 +42,8 @@ struct TCLogMateApp: App {
                     )
                 }
             }
+            
         }
-    
             Settings {
                 PreferencesView()
                     .environmentObject(preferences)

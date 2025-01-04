@@ -22,6 +22,14 @@ struct SysLogFileViewer: View {
     // Which line is highlighted right now?
     @State private var selectedLineID: UUID? = nil
     
+    // Search-related state
+        @State private var searchText: String = ""
+        @State private var searchResults: [UUID] = []
+        @State private var currentSearchIndex: Int = 0
+        
+    // Currently selected line ID for search highlighting
+        @State private var selectedSearchLineID: UUID? = nil
+    
     // Derived: which categories actually appear in the log
     private var appearingCategories: [LogCategory] {
         // Sort by rawValue so they appear in a consistent order
@@ -88,6 +96,35 @@ struct SysLogFileViewer: View {
                 .padding()
             }
             
+            // Find Feature UI
+                       HStack {
+                           TextField("Find...", text: $searchText)
+                               .textFieldStyle(RoundedBorderTextFieldStyle())
+                               .padding(.leading, 10)
+                               .onChange(of: searchText) { newValue in
+                                   performSearch(query: newValue)
+                               }
+                           
+                           Button("Prev") {
+                               previousSearchResult()
+                           }
+                           .disabled(searchResults.isEmpty)
+                           .padding(.horizontal, 5)
+                           
+                           Button("Next") {
+                               nextSearchResult()
+                           }
+                           .disabled(searchResults.isEmpty)
+                           .padding(.horizontal, 5)
+                           
+                           if !searchResults.isEmpty {
+                               Text("\(currentSearchIndex + 1)/\(searchResults.count)")
+                                   .padding(.leading, 5)
+                           }
+                       }
+                       .padding(.horizontal, 10)
+                       .padding(.vertical, 5)
+            
             Divider()
             
             ScrollView {
@@ -100,7 +137,10 @@ struct SysLogFileViewer: View {
                                 .padding(4)
                             // If selected, show the user-chosen highlight color
                                 .background(
-                                    line.id == selectedLineID ? prefs.highlightColor : Color.clear
+                                    //line.id == selectedLineID ? prefs.highlightColor : Color.clear
+                                    (searchText.isEmpty ? line.id == selectedLineID : line.id == selectedSearchLineID)
+                                                                            ? prefs.highlightColor
+                                                                            : Color.clear
                                 )
                                 .cornerRadius(4)
                                 .onTapGesture {
@@ -111,6 +151,7 @@ struct SysLogFileViewer: View {
                                     }
                                 }
                                 .id(line.id)
+       
                         }
                     }
                     .padding()
@@ -166,6 +207,43 @@ struct SysLogFileViewer: View {
         }
         return prefs.categoryColors[cat, default: .primary]
     }
+    
+    private func performSearch(query: String) {
+            if query.isEmpty {
+                // Clear search results
+                searchResults = []
+                selectedSearchLineID = nil
+                currentSearchIndex = 0
+            } else {
+                // Perform case-insensitive search
+                searchResults = logLines
+                    .filter { $0.text.localizedCaseInsensitiveContains(query) }
+                    .map { $0.id }
+                currentSearchIndex = 0
+                if !searchResults.isEmpty {
+                    selectedSearchLineID = searchResults[0]
+                    scrollProxy?.scrollTo(searchResults[0], anchor: .top)
+                } else {
+                    selectedSearchLineID = nil
+                }
+            }
+        }
+        
+        private func nextSearchResult() {
+            guard !searchResults.isEmpty else { return }
+            currentSearchIndex = (currentSearchIndex + 1) % searchResults.count
+            let lineID = searchResults[currentSearchIndex]
+            selectedSearchLineID = lineID
+            scrollProxy?.scrollTo(lineID, anchor: .top)
+        }
+        
+        private func previousSearchResult() {
+            guard !searchResults.isEmpty else { return }
+            currentSearchIndex = (currentSearchIndex - 1 + searchResults.count) % searchResults.count
+            let lineID = searchResults[currentSearchIndex]
+            selectedSearchLineID = lineID
+            scrollProxy?.scrollTo(lineID, anchor: .top)
+        }
 }
 
 
