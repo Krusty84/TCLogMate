@@ -9,8 +9,8 @@ import SwiftUI
 
 struct MainWindow: View {
     @State private var logLines: [LogLine] = []
-    @State private var fileName: String = ""
-    @State private var isLoading: Bool = false
+    //@State private var fileName: String = ""
+    @EnvironmentObject var gSs: GlobalStateStore
     @EnvironmentObject var prefs: AppPreferences
     
     var body: some View {
@@ -31,18 +31,18 @@ struct MainWindow: View {
         .frame(minWidth: 800, minHeight: 600)
     }
     private var fileNameTitleSuffix: String {
-        fileName.isEmpty ? "" : ": \(fileName)"
+        gSs.syslogFileName.isEmpty ? "" : ": \(gSs.syslogFileName)"
     }
     
     private var loadStateText: String {
-           if isLoading {
+        if gSs.isSysLogFileLoading {
                return "Loading..."
-           } else if !fileName.isEmpty {
-               return "Opened Syslog: \(fileName)"
-           } else {
+        } else if !gSs.syslogFileName.isEmpty {
+               return "Opened Syslog: \(gSs.syslogFileName)"
+        } else {
                return "Open Syslog"
            }
-       }
+    }
     
     private func openFile() {
         let openPanel = NSOpenPanel()
@@ -55,8 +55,8 @@ struct MainWindow: View {
         // This call is synchronous (blocking) on the main thread.
         // The user picks a file or cancels.
         if openPanel.runModal() == .OK, let url = openPanel.url {
-            fileName = "..."
-            isLoading = true
+            gSs.isSysLogFileLoading = true
+            //fileName = "..."
             self.logLines=[]
             DispatchQueue.global(qos: .userInitiated).async {
                 do {
@@ -65,14 +65,16 @@ struct MainWindow: View {
                     // Switch back to main thread to update UI
                     DispatchQueue.main.async {
                         self.logLines = lines
-                        self.isLoading = false
-                        fileName = url.lastPathComponent
+                        gSs.isSysLogFileLoading = false
+                        gSs.syslogFileName = url.lastPathComponent
+                        gSs.isSysLogFileLoaded = true
                     }
                 } catch {
                     DispatchQueue.main.async {
                         print("Error reading file: \(error)")
                         self.logLines = []
-                        self.isLoading = false
+                        gSs.isSysLogFileLoading = false
+                        gSs.isSysLogFileLoaded = false
                     }
                 }
             }

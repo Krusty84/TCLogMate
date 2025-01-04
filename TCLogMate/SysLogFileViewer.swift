@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SysLogFileViewer: View {
     let logLines: [LogLine]
+    @EnvironmentObject var gSs: GlobalStateStore
     @EnvironmentObject var prefs: AppPreferences
     // For programmatic scrolling
     @State private var scrollProxy: ScrollViewProxy?
@@ -108,7 +109,7 @@ struct SysLogFileViewer: View {
                             }
                         }
                 }
-            )
+            ).disabled(!gSs.isSysLogFileLoaded)
             Divider()
             DisclosureGroup(
                 isExpanded: $isExpandedFindPanel,
@@ -156,9 +157,8 @@ struct SysLogFileViewer: View {
                             }
                         }
                 }
-            )
-            
-            
+            ).disabled(!gSs.isSysLogFileLoaded)
+        
             Divider()
             
             ScrollView {
@@ -188,6 +188,7 @@ struct SysLogFileViewer: View {
                         }
                     }
                     .padding()
+                    .textSelection(.enabled)
                     .onAppear {
                         scrollProxy = proxy
                     }

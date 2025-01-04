@@ -10,11 +10,11 @@ import SwiftUI
 @main
 
 struct TCLogMateApp: App {
-
     @StateObject var preferences = AppPreferences()
+    @StateObject private var gSs = GlobalStateStore()
     var body: some Scene {
         WindowGroup {
-            MainWindow().environmentObject(preferences).onAppear {
+            MainWindow().environmentObject(gSs).environmentObject(preferences).onAppear {
                 //disable default NewTabbing feature
                 if let window = NSApp.windows.first {
                     window.tabbingMode = .disallowed
@@ -50,5 +50,3 @@ struct TCLogMateApp: App {
             }
         }
     }
-
-
