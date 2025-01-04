@@ -22,7 +22,7 @@ struct TCLogMateApp: App {
             }
         }.commands {
             CommandGroup(replacing: .appInfo) {
-                Button("About MyGreatApp") {
+                Button("About TCLogMate") {
                     NSApplication.shared.orderFrontStandardAboutPanel(
                         options: [
                             NSApplication.AboutPanelOptionKey.credits: NSAttributedString(
