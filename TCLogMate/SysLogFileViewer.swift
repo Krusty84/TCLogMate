@@ -12,24 +12,21 @@ struct SysLogFileViewer: View {
     @EnvironmentObject var prefs: AppPreferences
     // For programmatic scrolling
     @State private var scrollProxy: ScrollViewProxy?
-    
     // For each category, which line IDs match?
     private var categoryLineIDs: [LogCategory: [UUID]] = [:]
-    
     // Track the "currently selected" offset within each category
     @State private var currentOffsets: [LogCategory: Int] = [:]
-    
     // Which line is highlighted right now?
     @State private var selectedLineID: UUID? = nil
-    
     // Search-related state
-        @State private var searchText: String = ""
-        @State private var searchResults: [UUID] = []
-        @State private var currentSearchIndex: Int = 0
-        
+    @State private var searchText: String = ""
+    @State private var searchResults: [UUID] = []
+    @State private var currentSearchIndex: Int = 0
     // Currently selected line ID for search highlighting
-        @State private var selectedSearchLineID: UUID? = nil
-    
+    @State private var selectedSearchLineID: UUID? = nil
+    //UI elemenents state
+    @State private var isExpandedCategoryPanel = false
+    @State private var isExpandedFindPanel = false
     // Derived: which categories actually appear in the log
     private var appearingCategories: [LogCategory] {
         // Sort by rawValue so they appear in a consistent order
@@ -39,12 +36,12 @@ struct SysLogFileViewer: View {
     // Helper: color mapping for categories
     private func textColor(for category: LogCategory?) -> Color {
         switch category {
-        case .info:     return .blue
-        case .note:     return .purple
-        case .warning:  return .orange
-        case .debug:    return .gray
-        case .error:    return .red
-        default:        return .primary
+            case .info:     return .blue
+            case .note:     return .purple
+            case .warning:  return .orange
+            case .debug:    return .gray
+            case .error:    return .red
+            default:        return .primary
         }
     }
     
@@ -65,65 +62,102 @@ struct SysLogFileViewer: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            Text("===Existing categories in the open syslog file===")
-                .font(.title3)
-                .padding(.top, 5)
-            // A horizontal row for each *appearing* category,
-            // with a "prev" button, a label showing e.g. "ERROR (8/99)", and a "next" button.
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 20) {
-                    ForEach(appearingCategories, id: \.self) { cat in
-                        HStack {
-                            Button("<") {
-                                scrollToPreviousOccurrence(of: cat)
+            DisclosureGroup(
+                isExpanded: $isExpandedCategoryPanel,
+                content: {
+                    VStack(alignment: .leading) {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 20) {
+                                ForEach(appearingCategories, id: \.self) { cat in
+                                    HStack {
+                                        Button("<") {
+                                            scrollToPreviousOccurrence(of: cat)
+                                        }
+                                        
+                                        // Show label: e.g. "ERROR (8/99)"
+                                        Text(categoryLabel(cat))
+                                            .foregroundColor(colorForCategory(cat))
+                                            .fontWeight(.semibold)
+                                        
+                                        Button(">") {
+                                            scrollToNextOccurrence(of: cat)
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.secondary.opacity(0.1))
+                                    .cornerRadius(6)
+                                }
                             }
-                            
-                            // Show label: e.g. "ERROR (8/99)"
-                            Text(categoryLabel(cat))
-                                .foregroundColor(colorForCategory(cat))
-                                .fontWeight(.semibold)
-                            
-                            Button(">") {
-                                scrollToNextOccurrence(of: cat)
+                            .padding()
+                        }
+                    }
+                    .padding(.leading, 10)
+                },
+                label: {
+                    Text("Existing categories in the open syslog file")
+                        .font(.title3)
+                    //.padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    //.background(Color.orange.opacity(100))
+                        .background(Color(nsColor: .windowBackgroundColor))
+                    //.cornerRadius(8)
+                        .onTapGesture {
+                            withAnimation {
+                                isExpandedCategoryPanel.toggle()
                             }
                         }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.secondary.opacity(0.1))
-                        .cornerRadius(6)
-                    }
                 }
-                .padding()
-            }
+            )
+            Divider()
+            DisclosureGroup(
+                isExpanded: $isExpandedFindPanel,
+                content: {
+                    // Find Feature UI
+                    HStack {
+                        TextField("I am looking for...", text: $searchText)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding(.leading, 10)
+                            .onChange(of: searchText) { newValue in
+                                performSearch(query: newValue)
+                            }
+                        
+                        Button("Prev") {
+                            previousSearchResult()
+                        }
+                        .disabled(searchResults.isEmpty)
+                        .padding(.horizontal, 5)
+                        
+                        Button("Next") {
+                            nextSearchResult()
+                        }
+                        .disabled(searchResults.isEmpty)
+                        .padding(.horizontal, 5)
+                        
+                        if !searchResults.isEmpty {
+                            Text("\(currentSearchIndex + 1)/\(searchResults.count)")
+                                .padding(.leading, 5)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                },
+                label: {
+                    Text("Search...")
+                        .font(.title3)
+                    //.padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    //.background(Color.orange.opacity(100))
+                        .background(Color(nsColor: .windowBackgroundColor))
+                    //.cornerRadius(8)
+                        .onTapGesture {
+                            withAnimation {
+                                isExpandedFindPanel.toggle()
+                            }
+                        }
+                }
+            )
             
-            // Find Feature UI
-                       HStack {
-                           TextField("Find...", text: $searchText)
-                               .textFieldStyle(RoundedBorderTextFieldStyle())
-                               .padding(.leading, 10)
-                               .onChange(of: searchText) { newValue in
-                                   performSearch(query: newValue)
-                               }
-                           
-                           Button("Prev") {
-                               previousSearchResult()
-                           }
-                           .disabled(searchResults.isEmpty)
-                           .padding(.horizontal, 5)
-                           
-                           Button("Next") {
-                               nextSearchResult()
-                           }
-                           .disabled(searchResults.isEmpty)
-                           .padding(.horizontal, 5)
-                           
-                           if !searchResults.isEmpty {
-                               Text("\(currentSearchIndex + 1)/\(searchResults.count)")
-                                   .padding(.leading, 5)
-                           }
-                       }
-                       .padding(.horizontal, 10)
-                       .padding(.vertical, 5)
             
             Divider()
             
@@ -139,8 +173,8 @@ struct SysLogFileViewer: View {
                                 .background(
                                     //line.id == selectedLineID ? prefs.highlightColor : Color.clear
                                     (searchText.isEmpty ? line.id == selectedLineID : line.id == selectedSearchLineID)
-                                                                            ? prefs.highlightColor
-                                                                            : Color.clear
+                                    ? prefs.highlightColor
+                                    : Color.clear
                                 )
                                 .cornerRadius(4)
                                 .onTapGesture {
@@ -151,7 +185,6 @@ struct SysLogFileViewer: View {
                                     }
                                 }
                                 .id(line.id)
-       
                         }
                     }
                     .padding()
@@ -162,7 +195,7 @@ struct SysLogFileViewer: View {
             }
         }
     }
-        
+    
     /// Go backward within the specified category, cycling if needed.
     private func scrollToPreviousOccurrence(of cat: LogCategory) {
         guard let ids = categoryLineIDs[cat], !ids.isEmpty else { return }
@@ -209,41 +242,41 @@ struct SysLogFileViewer: View {
     }
     
     private func performSearch(query: String) {
-            if query.isEmpty {
-                // Clear search results
-                searchResults = []
-                selectedSearchLineID = nil
-                currentSearchIndex = 0
+        if query.isEmpty {
+            // Clear search results
+            searchResults = []
+            selectedSearchLineID = nil
+            currentSearchIndex = 0
+        } else {
+            // Perform case-insensitive search
+            searchResults = logLines
+                .filter { $0.text.localizedCaseInsensitiveContains(query) }
+                .map { $0.id }
+            currentSearchIndex = 0
+            if !searchResults.isEmpty {
+                selectedSearchLineID = searchResults[0]
+                scrollProxy?.scrollTo(searchResults[0], anchor: .top)
             } else {
-                // Perform case-insensitive search
-                searchResults = logLines
-                    .filter { $0.text.localizedCaseInsensitiveContains(query) }
-                    .map { $0.id }
-                currentSearchIndex = 0
-                if !searchResults.isEmpty {
-                    selectedSearchLineID = searchResults[0]
-                    scrollProxy?.scrollTo(searchResults[0], anchor: .top)
-                } else {
-                    selectedSearchLineID = nil
-                }
+                selectedSearchLineID = nil
             }
         }
-        
-        private func nextSearchResult() {
-            guard !searchResults.isEmpty else { return }
-            currentSearchIndex = (currentSearchIndex + 1) % searchResults.count
-            let lineID = searchResults[currentSearchIndex]
-            selectedSearchLineID = lineID
-            scrollProxy?.scrollTo(lineID, anchor: .top)
-        }
-        
-        private func previousSearchResult() {
-            guard !searchResults.isEmpty else { return }
-            currentSearchIndex = (currentSearchIndex - 1 + searchResults.count) % searchResults.count
-            let lineID = searchResults[currentSearchIndex]
-            selectedSearchLineID = lineID
-            scrollProxy?.scrollTo(lineID, anchor: .top)
-        }
+    }
+    
+    private func nextSearchResult() {
+        guard !searchResults.isEmpty else { return }
+        currentSearchIndex = (currentSearchIndex + 1) % searchResults.count
+        let lineID = searchResults[currentSearchIndex]
+        selectedSearchLineID = lineID
+        scrollProxy?.scrollTo(lineID, anchor: .top)
+    }
+    
+    private func previousSearchResult() {
+        guard !searchResults.isEmpty else { return }
+        currentSearchIndex = (currentSearchIndex - 1 + searchResults.count) % searchResults.count
+        let lineID = searchResults[currentSearchIndex]
+        selectedSearchLineID = lineID
+        scrollProxy?.scrollTo(lineID, anchor: .top)
+    }
 }
 
 
