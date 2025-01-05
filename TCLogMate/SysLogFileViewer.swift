@@ -194,7 +194,7 @@ struct SysLogFileViewer: View {
                     }
                 }
             }
-        }
+        }.padding()
     }
     
     /// Go backward within the specified category, cycling if needed.
