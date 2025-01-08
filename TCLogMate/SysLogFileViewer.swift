@@ -193,8 +193,29 @@ struct SysLogFileViewer: View {
                         scrollProxy = proxy
                     }
                 }
+            }.contextMenu {
+                Button("Go to Top") {
+                    goToTop()
+                }
+                Button("Go to Bottom") {
+                    goToBottom()
+                }
             }
         }.padding()
+    }
+    
+    private func goToTop() {
+        // Scroll to the first line's ID if it exists
+        if let firstID = logLines.first?.id {
+            scrollProxy?.scrollTo(firstID, anchor: .top)
+        }
+    }
+
+    private func goToBottom() {
+        // Scroll to the last line's ID if it exists
+        if let lastID = logLines.last?.id {
+            scrollProxy?.scrollTo(lastID, anchor: .bottom)
+        }
     }
     
     /// Go backward within the specified category, cycling if needed.
