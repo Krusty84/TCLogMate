@@ -28,6 +28,9 @@ struct SysLogFileViewer: View {
     //UI elemenents state
     @State private var isExpandedCategoryPanel = false
     @State private var isExpandedFindPanel = false
+    @State private var isExpandedStatPanel = false
+    //
+    private let summary: LogSummary
     // Derived: which categories actually appear in the log
     private var appearingCategories: [LogCategory] {
         // Sort by rawValue so they appear in a consistent order
@@ -59,6 +62,7 @@ struct SysLogFileViewer: View {
             }
         }
         self.categoryLineIDs = dict
+        self.summary = buildSummary(from: logLines)
     }
     
     var body: some View {
@@ -111,6 +115,30 @@ struct SysLogFileViewer: View {
                 }
             ).disabled(!gSs.isSysLogFileLoaded)
             Divider()
+            
+            
+            DisclosureGroup(
+                isExpanded: $isExpandedStatPanel,
+                content: {
+                    // 4) Quick Stats at the bottom
+                    SysLogFileStatsView(summary: summary)
+                },
+                label: {
+                    Text("Statistics")
+                        .font(.title3)
+                    //.padding()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    //.background(Color.orange.opacity(100))
+                        .background(Color(nsColor: .windowBackgroundColor))
+                    //.cornerRadius(8)
+                        .onTapGesture {
+                            withAnimation {
+                                isExpandedStatPanel.toggle()
+                            }
+                        }
+                }
+            ).disabled(!gSs.isSysLogFileLoaded)
+                            
             DisclosureGroup(
                 isExpanded: $isExpandedFindPanel,
                 content: {
@@ -298,6 +326,13 @@ struct SysLogFileViewer: View {
         let lineID = searchResults[currentSearchIndex]
         selectedSearchLineID = lineID
         scrollProxy?.scrollTo(lineID, anchor: .top)
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let df = DateFormatter()
+        df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        df.timeZone = TimeZone.current
+        return df.string(from: date)
     }
 }
 

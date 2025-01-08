@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MainWindow: View {
     @State private var logLines: [LogLine] = []
+    @State private var summary: LogSummary? = nil
     //@State private var fileName: String = ""
     @EnvironmentObject var gSs: GlobalStateStore
     @EnvironmentObject var prefs: AppPreferences
@@ -24,9 +25,16 @@ struct MainWindow: View {
                 .padding(.top, 5)
             }
             Divider()
-            
             // Viewer is here
             SysLogFileViewer(logLines: logLines)
+            Divider()
+            // 2) If we have a summary, show QuickStatsView
+//            if let sum = summary {
+//                QuickStatsView(summary: sum)
+//                    .border(Color.gray, width: 1)
+//                        .padding()
+//                       }
+            
         }
         .frame(minWidth: 800, minHeight: 600)
     }
@@ -65,6 +73,7 @@ struct MainWindow: View {
                     // Switch back to main thread to update UI
                     DispatchQueue.main.async {
                         self.logLines = lines
+                        self.summary = buildSummary(from: lines)
                         gSs.isSysLogFileLoading = false
                         gSs.syslogFileName = url.lastPathComponent
                         gSs.isSysLogFileLoaded = true

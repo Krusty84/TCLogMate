@@ -25,6 +25,14 @@ struct LogLine: Identifiable {
     let category: LogCategory?
 }
 
+struct LogSummary {
+    let totalLines: Int
+    let categoryCounts: [LogCategory: Int]
+    let earliestTimestamp: Date?
+    let latestTimestamp: Date?
+}
+
+
 class AppPreferences: ObservableObject {
     @Published var highlightColor: Color
     @Published var categoryColors: [LogCategory: Color]
