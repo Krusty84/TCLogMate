@@ -36,7 +36,6 @@ struct MainWindow: View {
                 Divider()
                 // Viewer is here
                 SysLogFileViewer(logLines: logLines)
-                Divider()
             }
 
         }
@@ -46,7 +45,7 @@ struct MainWindow: View {
             self.logLines.removeAll()
             gSs.isSysLogFileLoading = true
             provider.loadItem(forTypeIdentifier: "public.file-url", options: nil) { (reading, error) in
-                print("loadItem callback triggered. reading=\(reading) error=\(String(describing: error))")
+                    //print("loadItem callback triggered. reading=\(reading) error=\(String(describing: error))")
 
                 // 1) Try casting reading to Data
                 if let data = reading as? Data {

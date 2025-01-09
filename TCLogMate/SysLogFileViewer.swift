@@ -30,6 +30,8 @@ struct SysLogFileViewer: View {
     @State private var isExpandedFindPanel = false
     @State private var isExpandedStatPanel = false
     //
+    @State private var badgeStates: [LogCategory: Bool] = [:]
+    //
     private let summary: LogSummary
     // Derived: which categories actually appear in the log
     private var appearingCategories: [LogCategory] {
@@ -80,9 +82,31 @@ struct SysLogFileViewer: View {
                                         }
                                         
                                         // Show label: e.g. "ERROR (8/99)"
-                                        Text(categoryLabel(cat))
-                                            .foregroundColor(colorForCategory(cat))
-                                            .fontWeight(.semibold)
+                                        //                                        Text(categoryLabel(cat))
+                                        //                                            .foregroundColor(colorForCategory(cat))
+                                        //                                            .fontWeight(.semibold)
+                                        
+                                        HStack(spacing: 4) {
+                                            Text(categoryLabel(cat))
+                                                .foregroundColor(prefs.categoryColors[cat, default: .primary])
+                                                .fontWeight(.semibold)
+                                            Image(systemName: "doc.on.doc")
+                                        }.onTapGesture {
+                                            copyCategoryToClipboard(of: cat)
+                                            badgeStates[cat] = true // Show badge for the specific category
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                                badgeStates[cat] = false // Hide badge after 2 seconds
+                                            }
+                                        }
+                                        .help("Copy all \(cat.rawValue) lines to Clipboard")
+                                        if badgeStates[cat] == true {
+                                            Text("Copied!")
+                                                .font(.caption)
+                                                .foregroundColor(.green)
+                                                .transition(.opacity)
+                                                .animation(.easeInOut, value: badgeStates[cat])
+                                        }
+                                        
                                         
                                         Button(">") {
                                             scrollToNextOccurrence(of: cat)
@@ -138,7 +162,7 @@ struct SysLogFileViewer: View {
                         }
                 }
             ).disabled(!gSs.isSysLogFileLoaded)
-                            
+            
             DisclosureGroup(
                 isExpanded: $isExpandedFindPanel,
                 content: {
@@ -186,7 +210,7 @@ struct SysLogFileViewer: View {
                         }
                 }
             ).disabled(!gSs.isSysLogFileLoaded)
-        
+            
             Divider()
             
             ScrollView {
@@ -238,13 +262,32 @@ struct SysLogFileViewer: View {
             scrollProxy?.scrollTo(firstID, anchor: .top)
         }
     }
-
+    
     private func goToBottom() {
         // Scroll to the last line's ID if it exists
         if let lastID = logLines.last?.id {
             scrollProxy?.scrollTo(lastID, anchor: .bottom)
         }
     }
+    
+    private func copyCategoryToClipboard(of cat: LogCategory) {
+        // 1) Filter the log lines for the given category
+        let matchingLines = logLines
+            .filter { $0.category == cat }
+            .map { $0.text }
+        
+        // 2) Join them into a single string separated by newlines
+        let allLinesText = matchingLines.joined(separator: "\n")
+        
+        // 3) Copy to the macOS clipboard
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(allLinesText, forType: .string)
+        
+        // Optional: Provide user feedback, e.g., show a small toast or log statement
+        print("Copied \(matchingLines.count) line(s) of category \(cat.rawValue) to clipboard.")
+    }
+    
     
     /// Go backward within the specified category, cycling if needed.
     private func scrollToPreviousOccurrence(of cat: LogCategory) {
