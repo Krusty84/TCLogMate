@@ -11,7 +11,7 @@ import SwiftUI
 
 struct TCLogMateApp: App {
     @StateObject var preferences = AppPreferences()
-    @StateObject private var gSs = GlobalStateStore()
+    @StateObject private var gSs = GlobalStateStore.shared
     var body: some Scene {
         WindowGroup {
             MainWindow().environmentObject(gSs).environmentObject(preferences).onAppear {

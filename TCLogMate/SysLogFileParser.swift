@@ -26,8 +26,8 @@ func parseSyslog(_ content: String) -> [LogLine] {
                 break
             }
         }
-        
         parsedLines.append(LogLine(text: line, category: matchedCategory))
+        
     }
     return parsedLines
 }
