@@ -100,7 +100,7 @@ struct SysLogFileViewer: View {
                     .padding(.leading, 10)
                 },
                 label: {
-                    Text("Existing categories in the open syslog file")
+                    Text("Existing categories of the opened syslog file")
                         .font(.title3)
                     //.padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
